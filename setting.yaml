@@ -1,0 +1,11 @@
+logServer:
+  logpath: "logs\\"
+  showlevel: "DEBUG"
+  recordlevel: "DEBUG"
+  filename: "steven"
+  port: 5555
+  filter:
+    blacklist: ["log3", "log4"]
+    separate_files:
+      log5: "log5.log"
+      log6: "log6.log"
