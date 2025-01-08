@@ -25,6 +25,9 @@ def log_worker():
     socket.connect("tcp://localhost:5555")
     while True:
         try:
+            if log_queue.empty():
+                time.sleep(0.001)  # 如果队列为空，等待一段时间再检查
+                continue
             message = log_queue.get(timeout=1)  # 设置超时时间
             if message is None:
                 continue  # 如果获取到 None，继续循环
@@ -35,14 +38,11 @@ def log_worker():
     socket.close()
     context.term()
 
-class loger:
+class logger:
     @staticmethod
-    def _log(level, message):
+    def _log(sender,level, message):
         if not log_thread_started:
             start_log_thread()
-        caller_frame = inspect.currentframe().f_back                
-        sender = caller_frame.f_code.co_filename.split('\\')[-1]
-        sender += "." + caller_frame.f_code.co_name + ': '
         now = datetime.now()
         ts = now.strftime("%Y-%m-%d %H:%M:%S") + ".{:03}".format(now.microsecond // 1000)
         message = json.dumps({"ts": ts, "cmd": level, "log_name": sender, "log_content": message})
@@ -50,50 +50,77 @@ class loger:
 
     @staticmethod
     def info(message):
-        loger._log("INFO", message)
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '           
+        logger._log(sender,"INFO", message)
 
     @staticmethod
     def debug(message):
-        loger._log("DEBUG", message)
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '    
+        logger._log(sender,"DEBUG", message)
 
     @staticmethod
     def error(message):
-        loger._log("ERROR", message)
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '    
+        logger._log(sender,"ERROR", message)
 
     @staticmethod
     def warning(message):
-        loger._log("WARNING", message)
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '    
+        logger._log(sender,"WARNING", message)
 
     @staticmethod
     def critical(message):
-        loger._log("CRITICAL", message)
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '    
+        logger._log(sender,"CRITICAL", message)
+
+    @staticmethod
+    def show(target, data):
+        caller_frame = inspect.currentframe().f_back                
+        sender = caller_frame.f_code.co_filename.split('\\')[-1]
+        sender += f"[{caller_frame.f_code.co_firstlineno}] " + caller_frame.f_code.co_name + ': '    
+        logger._log(sender,"SHOW", {"target": target, "data": data})
 
 def main():    
-    loger.info("This is an info message.")
-    loger.error("This is an error message.")
+    logger.info("This is an info message.")
+    logger.error("This is an error message.")
 
 def test_log_performance():
 
-    loger.info("Starting performance test.")
+    logger.info("Starting performance test.")
     start_time = time.time()
     times = []
 
-    for i in range(1000):
+    for i in range(10):
         start = time.time()
-        loger.info(f"Test log message.{i}")
+        logger.info(f"Test log message.{i}")
         end = time.time()
         times.append(end - start)
 
     end_time = time.time()
     total_time = end_time - start_time
-    average_time = total_time / 1000
+    average_time = total_time / 10
     max_time = max(times)
 
     print(f"Total time: {total_time:.6f} seconds")
     print(f"Average time: {average_time:.6f} seconds")
     print(f"Max time: {max_time:.6f} seconds")
 
+    print("show test")
+    logger.show("test_target", "testdata")
+
 if __name__ == "__main__":
     main()
-    #test_log_performance()  # 添加测试函数调用
+    test_log_performance()  # 添加测试函数调用
+
+    time.sleep(5)
 
